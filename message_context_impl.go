@@ -1,39 +1,87 @@
 package ccssdk
 
-type MessageContextImpl struct {
-	AppId         string
-	ServiceId     string
-	RespServiceId string
-	Timestamp     int64
-	Payload       string
-	Referers      []*interface{}
-	Code          int32
-}
+type (
+	RequestMessageContextImpl struct {
+		AppId            string
+		ServiceId        string
+		Token            string
+		Timestamp        int64
+		Payload          string
+		Referers         []*interface{}
+		NeedRespReferers bool
+	}
 
-func (x MessageContextImpl) GetAppId() string {
+	ResponseMessageContextImpl struct {
+		AppId         string
+		ServiceId     string
+		RespServiceId string
+		Timestamp     int64
+		Payload       string
+		Referers      []*interface{}
+		Code          int32
+	}
+)
+
+//
+// Request
+//
+
+func (x RequestMessageContextImpl) GetAppId() string {
 	return x.AppId
 }
 
-func (x MessageContextImpl) GetServiceId() string {
+func (x RequestMessageContextImpl) GetServiceId() string {
 	return x.ServiceId
 }
 
-func (x MessageContextImpl) GetRespServiceId() string {
-	return x.RespServiceId
+func (x RequestMessageContextImpl) GetToken() string {
+	return x.Token
 }
 
-func (x MessageContextImpl) GetTimestamp() int64 {
+func (x RequestMessageContextImpl) GetTimestamp() int64 {
 	return x.Timestamp
 }
 
-func (x MessageContextImpl) GetPayload() string {
+func (x RequestMessageContextImpl) GetPayload() string {
 	return x.Payload
 }
 
-func (x MessageContextImpl) GetReferers() []*interface{} {
+func (x RequestMessageContextImpl) GetReferers() []*interface{} {
 	return x.Referers
 }
 
-func (x MessageContextImpl) GetCode() int32 {
+func (x RequestMessageContextImpl) GetNeedRespReferers() bool {
+	return x.NeedRespReferers
+}
+
+//
+// Response
+//
+
+func (x ResponseMessageContextImpl) GetAppId() string {
+	return x.AppId
+}
+
+func (x ResponseMessageContextImpl) GetServiceId() string {
+	return x.ServiceId
+}
+
+func (x ResponseMessageContextImpl) GetRespServiceId() string {
+	return x.RespServiceId
+}
+
+func (x ResponseMessageContextImpl) GetTimestamp() int64 {
+	return x.Timestamp
+}
+
+func (x ResponseMessageContextImpl) GetPayload() string {
+	return x.Payload
+}
+
+func (x ResponseMessageContextImpl) GetReferers() []*interface{} {
+	return x.Referers
+}
+
+func (x ResponseMessageContextImpl) GetCode() int32 {
 	return x.Code
 }

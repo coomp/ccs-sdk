@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"os"
 
 	"github.com/apache/rocketmq-client-go/v2"
 	"github.com/apache/rocketmq-client-go/v2/consumer"
@@ -15,11 +14,10 @@ import (
 type RocketMQMessageQueueRepository struct {
 	nameServers primitive.NamesrvAddr
 	consumer    rocketmq.PushConsumer
-	respTopic   string
 }
 
-func NewRocketMQMessageQueueRepository(nameServers []string, respTopic string) (*RocketMQMessageQueueRepository, error) {
-	log.Printf("NewRocketMQMessageQueueRepository: ns = %v, topic = %v", nameServers, respTopic)
+func NewRocketMQMessageQueueRepository(nameServers []string) (*RocketMQMessageQueueRepository, error) {
+	log.Printf("NewRocketMQMessageQueueRepository: ns = %v", nameServers)
 
 	// mqEndpointStr := env.GetOrDefault(constant.MQ_ENDPOINT, "192.168.147.129:9876")
 	// mqEndpoints := strings.SplitN(mqEndpointStr, ",", -1)
@@ -35,17 +33,39 @@ func NewRocketMQMessageQueueRepository(nameServers []string, respTopic string) (
 	return &RocketMQMessageQueueRepository{
 		nameServers: nameServers,
 		consumer:    c,
-		respTopic:   respTopic,
 	}, nil
 }
 
-func (r RocketMQMessageQueueRepository) Subscribe(topic string, funcs HandleFuncs) {
-	err := r.consumer.Subscribe(r.respTopic, consumer.MessageSelector{}, func(ctx context.Context,
+func (r RocketMQMessageQueueRepository) SubscribeRequest(topic string, funcs RequestHandleFuncs) error {
+	err := r.consumer.Subscribe(topic, consumer.MessageSelector{}, func(ctx context.Context,
 		msgs ...*primitive.MessageExt) (consumer.ConsumeResult, error) {
 		for i := range msgs {
-			fmt.Printf("On Subscribe Callback: %v \n", msgs[i])
+			fmt.Printf("On SubscribeRequest Callback: %v \n", msgs[i])
 			// msg to context
-			var resp MessageContextImpl
+			var req RequestMessageContextImpl
+			err := json.Unmarshal(msgs[i].Body, &req)
+			if err != nil {
+				log.Println(err)
+			} else {
+				for _, handle := range funcs {
+					handle(req)
+				}
+			}
+		}
+
+		return consumer.ConsumeSuccess, nil
+	})
+	return err
+
+}
+
+func (r RocketMQMessageQueueRepository) SubscribeResponse(topic string, funcs ResponseHandleFuncs) error {
+	err := r.consumer.Subscribe(topic, consumer.MessageSelector{}, func(ctx context.Context,
+		msgs ...*primitive.MessageExt) (consumer.ConsumeResult, error) {
+		for i := range msgs {
+			fmt.Printf("On SubscribeResponse Callback: %v \n", msgs[i])
+			// msg to context
+			var resp ResponseMessageContextImpl
 			err := json.Unmarshal(msgs[i].Body, &resp)
 			if err != nil {
 				log.Println(err)
@@ -58,14 +78,12 @@ func (r RocketMQMessageQueueRepository) Subscribe(topic string, funcs HandleFunc
 
 		return consumer.ConsumeSuccess, nil
 	})
-	if err != nil {
-		fmt.Println(err.Error())
-	}
-	// Note: start after subscribe
-	err = r.consumer.Start()
-	if err != nil {
-		fmt.Println(err.Error())
-		os.Exit(-1)
-	}
 
+	return err
+
+}
+
+func (r RocketMQMessageQueueRepository) Start() error {
+	// Note: start after subscribe
+	return r.consumer.Start()
 }

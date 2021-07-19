@@ -12,39 +12,62 @@ import (
 
 type CcsSdk struct {
 	CcsEndpoint         string
-	HandleFuncs         HandleFuncs
+	RequestHandlers     RequestHandleFuncs
+	ResponseHandlers    ResponseHandleFuncs
 	messageQueueService *MessageQueueService
 }
 
-func InitCcsSdk(ccs_endpoint string, handleFuncs HandleFuncs) (*CcsSdk, error) {
+func NewCcsSdk(requestHandlers RequestHandleFuncs, responseHandlers ResponseHandleFuncs) (*CcsSdk, error) {
 
-	var fixedHandleFuncs HandleFuncs
-	fixedHandleFuncs = append(fixedHandleFuncs, NewDefaultHandle())
-	fixedHandleFuncs = append(fixedHandleFuncs, handleFuncs...)
+	var fixedRequestHandleFuncs RequestHandleFuncs
+	fixedRequestHandleFuncs = append(fixedRequestHandleFuncs, NewDefaultRequestHandler())
+	fixedRequestHandleFuncs = append(fixedRequestHandleFuncs, requestHandlers...)
 
-	// mq
-	mqEndpointStr := GetOrDefault(MQ_ENDPOINT, "192.168.147.129:9876")
+	var fixedResponseHandleFuncs ResponseHandleFuncs
+	fixedResponseHandleFuncs = append(fixedResponseHandleFuncs, NewDefaultResponseHandler())
+	fixedResponseHandleFuncs = append(fixedResponseHandleFuncs, responseHandlers...)
+
+	// TODO fixme
+	mqEndpointStr := GetOrDefault(CCS_MQ_ENDPOINT, "118.195.175.6:9876")
 	mqEndpoints := strings.SplitN(mqEndpointStr, ",", -1)
-	mqRespTopic := GetOrDefault(MQ_RESP_TOPIC, "svc1-resp-topic")
+	mqReqTopic := GetOrDefault(CCS_MQ_REQ_TOPIC, "__SVC1_REQ_TOPIC__")
+	mqRespTopic := GetOrDefault(CCS_MQ_RESP_TOPIC, "__SVC1_REQ_TOPIC__")
 
-	messageQueueRepo, err := NewRocketMQMessageQueueRepository(mqEndpoints, mqRespTopic)
+	messageQueueRepo, err := NewRocketMQMessageQueueRepository(mqEndpoints)
 	if err != nil {
-		log.Fatal(err)
+		log.Printf("Could not init rocketmq repo %v", err)
+		return nil, err
 	}
 
 	sdk := &CcsSdk{
-		CcsEndpoint:         ccs_endpoint,
-		HandleFuncs:         fixedHandleFuncs,
+		// TODO fixme
+		CcsEndpoint:         GetOrDefault(CCS_ENDPOINTS, "118.195.175.6:2388"),
+		RequestHandlers:     fixedRequestHandleFuncs,
+		ResponseHandlers:    fixedResponseHandleFuncs,
 		messageQueueService: NewMessageQueueService(messageQueueRepo),
 	}
 
 	// watch
-	sdk.messageQueueService.Subscribe(mqRespTopic, sdk.HandleFuncs)
+	err = sdk.messageQueueService.SubscribeRequest(mqReqTopic, sdk.RequestHandlers)
+	if err != nil {
+		log.Printf("Could not subscribe CCS_MQ_REQ_TOPIC %v", err)
+		return nil, err
+	}
+	err = sdk.messageQueueService.SubscribeResponse(mqRespTopic, sdk.ResponseHandlers)
+	if err != nil {
+		log.Printf("Could not subscribe CCS_MQ_RESP_TOPIC %v", err)
+		return nil, err
+	}
+	err = sdk.messageQueueService.Start()
+	if err != nil {
+		log.Printf("Could not start message consumer %v", err)
+		return nil, err
+	}
 
 	return sdk, nil
 }
 
-func (s *CcsSdk) Send(msg string, timeout int) error {
+func (s *CcsSdk) HandleMessage(msg string, need_resp_referers bool, timeout int) error {
 	// TODO optimize me, connection multiplexing
 	conn, err := grpc.Dial(s.CcsEndpoint, grpc.WithInsecure())
 
@@ -56,15 +79,14 @@ func (s *CcsSdk) Send(msg string, timeout int) error {
 
 	messageClient := NewServiceMessageClient(conn)
 
-	// TODO from env
-	secretKey := "__SECRET_KEY__"
+	secretKey := GetOrDefault(CCS_SECRET_KEY, "__SECRET_KEY__")
 
-	// TODO fill AppId, ServiceId etc.
 	request := &MessageRequest{
-		AppId:     "__APP_ID__",
-		ServiceId: "__SERVICE_ID__",
-		Payload:   msg,
-		Timestamp: time.Now().Unix(),
+		AppId:            GetOrDefault(CCS_APP_ID, "__APP_ID__"),
+		ServiceId:        GetOrDefault(CCS_SERVICE_ID, "__SERVICE_ID__"),
+		Payload:          msg,
+		Timestamp:        time.Now().Unix(),
+		NeedRespReferers: need_resp_referers,
 	}
 
 	request.Token = HmacSha256Base64(fmt.Sprintf("%s%d", request.AppId, request.Timestamp), secretKey)

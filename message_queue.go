@@ -1,7 +1,9 @@
 package ccssdk
 
 type MessageQueueRepository interface {
-	Subscribe(topic string, funcs HandleFuncs)
+	SubscribeRequest(topic string, funcs RequestHandleFuncs) error
+	SubscribeResponse(topic string, funcs ResponseHandleFuncs) error
+	Start() error
 }
 
 type MessageQueueService struct {
@@ -14,6 +16,14 @@ func NewMessageQueueService(repo MessageQueueRepository) *MessageQueueService {
 	}
 }
 
-func (s *MessageQueueService) Subscribe(topic string, funcs HandleFuncs) {
-	s.Repo.Subscribe(topic, funcs)
+func (s *MessageQueueService) SubscribeRequest(topic string, funcs RequestHandleFuncs) error {
+	return s.Repo.SubscribeRequest(topic, funcs)
+}
+
+func (s *MessageQueueService) SubscribeResponse(topic string, funcs ResponseHandleFuncs) error {
+	return s.Repo.SubscribeResponse(topic, funcs)
+}
+
+func (s *MessageQueueService) Start() error {
+	return s.Repo.Start()
 }
