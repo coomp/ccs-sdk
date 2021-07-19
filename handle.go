@@ -1,13 +1,11 @@
-package handle
+package ccssdk
 
 import (
 	"fmt"
-
-	"github.com/coomp/ccs-sdk/message"
 )
 
 type (
-	HandleFunc  func(message.MessageContext) error
+	HandleFunc  func(MessageContext) error
 	HandleFuncs []HandleFunc
 )
 
@@ -17,7 +15,7 @@ func NewEmpty() HandleFuncs {
 }
 
 func NewDefaultHandle() HandleFunc {
-	return func(c message.MessageContext) error {
+	return func(c MessageContext) error {
 		fmt.Printf("DefaultHandle got message at %v\n", c.GetTimestamp())
 		return nil
 	}

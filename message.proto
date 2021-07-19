@@ -1,10 +1,10 @@
 syntax = "proto3";
  
-// message 包
-package message;
+// ccssdk 包
+package ccssdk;
 
 // 指定 go 的包路径及包名
-option go_package="services;services";
+option go_package=".;ccssdk";
 
 // User 服务及服务接口的定义
 service ServiceMessage {

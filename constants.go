@@ -1,4 +1,4 @@
-package constant
+package ccssdk
 
 const (
 	MQ_ENDPOINT   = "MQ_ENDPOINT"

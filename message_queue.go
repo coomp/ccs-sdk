@@ -1,9 +1,7 @@
-package services
-
-import "github.com/coomp/ccs-sdk/handle"
+package ccssdk
 
 type MessageQueueRepository interface {
-	Subscribe(topic string, funcs handle.HandleFuncs)
+	Subscribe(topic string, funcs HandleFuncs)
 }
 
 type MessageQueueService struct {
@@ -16,6 +14,6 @@ func NewMessageQueueService(repo MessageQueueRepository) *MessageQueueService {
 	}
 }
 
-func (s *MessageQueueService) Subscribe(topic string, funcs handle.HandleFuncs) {
+func (s *MessageQueueService) Subscribe(topic string, funcs HandleFuncs) {
 	s.Repo.Subscribe(topic, funcs)
 }

@@ -1,4 +1,4 @@
-package rocketmq_impl
+package ccssdk
 
 import (
 	"context"
@@ -10,8 +10,6 @@ import (
 	"github.com/apache/rocketmq-client-go/v2"
 	"github.com/apache/rocketmq-client-go/v2/consumer"
 	"github.com/apache/rocketmq-client-go/v2/primitive"
-	"github.com/coomp/ccs-sdk/handle"
-	"github.com/coomp/ccs-sdk/message"
 )
 
 type RocketMQMessageQueueRepository struct {
@@ -41,13 +39,13 @@ func NewRocketMQMessageQueueRepository(nameServers []string, respTopic string) (
 	}, nil
 }
 
-func (r RocketMQMessageQueueRepository) Subscribe(topic string, funcs handle.HandleFuncs) {
+func (r RocketMQMessageQueueRepository) Subscribe(topic string, funcs HandleFuncs) {
 	err := r.consumer.Subscribe(r.respTopic, consumer.MessageSelector{}, func(ctx context.Context,
 		msgs ...*primitive.MessageExt) (consumer.ConsumeResult, error) {
 		for i := range msgs {
 			fmt.Printf("On Subscribe Callback: %v \n", msgs[i])
 			// msg to context
-			var resp message.MessageContextImpl
+			var resp MessageContextImpl
 			err := json.Unmarshal(msgs[i].Body, &resp)
 			if err != nil {
 				log.Println(err)

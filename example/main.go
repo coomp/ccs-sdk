@@ -3,20 +3,18 @@ package main
 import (
 	"fmt"
 
-	"github.com/coomp/ccs-sdk"
-	"github.com/coomp/ccs-sdk/handle"
-	"github.com/coomp/ccs-sdk/message"
+	ccssdk "github.com/coomp/ccs-sdk"
 )
 
-func NewStdoutLoggingHandle() handle.HandleFunc {
-	return func(c message.MessageContext) error {
+func NewStdoutLoggingHandle() ccssdk.HandleFunc {
+	return func(c ccssdk.MessageContext) error {
 		fmt.Printf("DefaultHandle got message at %v\n", c.GetTimestamp())
 		return nil
 	}
 }
 
 func main() {
-	handles := handle.NewEmpty()
+	handles := ccssdk.NewEmpty()
 	handles = append(handles, NewStdoutLoggingHandle())
-	ccs.InitCcsSdk(handles)
+	ccssdk.InitCcsSdk(handles)
 }

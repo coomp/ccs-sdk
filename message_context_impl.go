@@ -1,4 +1,4 @@
-package message
+package ccssdk
 
 type MessageContextImpl struct {
 	AppId         string
